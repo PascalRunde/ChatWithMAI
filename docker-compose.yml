@@ -1,0 +1,11 @@
+services:
+  ChatWithMAI:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ChatWithMAIContainer
+    image: chatwithmai:latest
+    ports:
+      - "7400:7400"
+    environment:
+      - ASPNETCORE_HTTP_PORTS=7400

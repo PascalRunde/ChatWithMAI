@@ -1,0 +1,35 @@
+@page "/messages"
+
+<div ></div>
+<div class="form-group">
+    <label>
+        Message:
+        <input @bind="MessageInput" size="50"/>
+    </label>
+</div>
+<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
+<hr>
+
+<ul id="messagesList">
+    @foreach (var message in Messages)
+    {
+        <li>@message</li>
+    }
+</ul>
+
+@code {
+    [Parameter] 
+    public string? MessageInput { get; set; } = "";
+    [Parameter]
+    public bool IsConnected { get; set; }
+    [Parameter] 
+    public List<string> Messages { get; set; } = [];
+
+    [Parameter] public Action<string> OnSend { get; set; } = (message) => throw new NotImplementedException();
+    
+    private void Send()
+    {
+        OnSend.Invoke(MessageInput?? "");
+    }
+    
+}

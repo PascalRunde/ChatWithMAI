@@ -1,0 +1,108 @@
+@page "/chat"
+@rendermode InteractiveWebAssembly
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<PageTitle>Chat</PageTitle>
+
+<div class="centered-div">
+    <div class="centered-div">
+        <label class="mainlbl">
+            Name:
+        </label>
+    </div>
+    <br>
+    <input disabled="@signedIn" @bind="userInput" />
+</div>
+@{
+    if (!signedIn)
+    {
+        <div>
+            <button @onclick="SignUp" disabled="@(!IsConnected)">SignUp</button>
+        </div>
+    }
+    else
+    {
+        if (waitingForSession)
+        {
+            <div class="form-group">
+                <label>
+                    Waiting for Session
+                </label>
+            </div>
+        }
+        else
+        {
+            <ChatMessageWindow OnSend="@((message) => _ = Send(message) )"  IsConnected="@IsConnected" Messages="@messages"/>
+        }
+    }
+  
+}
+
+@code {
+    [Parameter, SupplyParameterFromQuery]
+    public string SignedIn { get; set; }
+    private HubConnection? hubConnection;
+    private List<string> messages = [];
+    private string? userInput;
+    private bool signedIn;
+    private bool waitingForSession;
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
+            .Build();
+
+        hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+        {
+            var encodedMsg = $"{user}: {message}";
+            messages.Add(encodedMsg);
+            InvokeAsync(StateHasChanged);
+        });
+        
+        hubConnection.On("WaitingForSession", () =>
+        {
+            waitingForSession = true;
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On("ConnectedToSession", () =>
+        {
+            waitingForSession = false;
+            InvokeAsync(StateHasChanged); });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task SignUp()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("SignUp", userInput, hubConnection.ConnectionId);
+            signedIn = true;
+        }
+    }
+
+    private async Task Send(string message)
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.SendAsync("SendMessage", hubConnection.ConnectionId, message);
+        }
+    }
+
+
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
