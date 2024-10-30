@@ -20,7 +20,12 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --verbosity normal
 
     - name: dotnet publish
       run: dotnet publish ChatWithMAI/ChatWithMAI.csproj --configuration Release -o artifacts
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ChatWithMAIPublished
+        pat: artifacts/
