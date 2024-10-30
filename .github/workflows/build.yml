@@ -33,4 +33,7 @@ jobs:
       # Runs a single command using the runners shell
       - name: Build with dotnet
         run: dotnet build --configuration Release
+      
+      - name: Build with dotnet
+        run: dotnet test --configuration Release --no-build
 
