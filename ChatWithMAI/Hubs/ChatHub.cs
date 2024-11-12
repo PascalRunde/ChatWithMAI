@@ -9,14 +9,11 @@ public class ChatHub(ISignUpService signUpService, ISessionService sessionServic
     {
         var userModel = signUpService.SignUp(user,connectionId);
         await Clients.Client(connectionId).SendAsync("WaitingForSession");
-        Console.WriteLine("Connect user " + user + " with connection id " + connectionId + " on thread " + Thread.CurrentThread.ManagedThreadId);
-        
         ticketService.CreateNewTicket(userModel, SendConnectUserToSessionResponse).GetAwaiter().GetResult();
     }
 
     private async Task SendConnectUserToSessionResponse(User user)
     {
-        Console.WriteLine("Reaching in Hub response call for user" + user.Username + " with id: " + user.ConnectionId + "on thread: " + Thread.CurrentThread.ManagedThreadId);
         await Clients.Client(user.ConnectionId).SendAsync("ConnectedToSession");
     }
 
@@ -25,9 +22,7 @@ public class ChatHub(ISignUpService signUpService, ISessionService sessionServic
         var user = signUpService.GetUserByConnectionId(connectionId);
         if (user is null)
             return;
-        
-        Console.WriteLine("Send message from " + user.Username + " with id: " + user.ConnectionId + " on thread: " +
-                          Environment.CurrentManagedThreadId);
+
         var session = sessionService.GetSessionByUser(user);
 
         if (session.HasAi)
@@ -38,13 +33,11 @@ public class ChatHub(ISignUpService signUpService, ISessionService sessionServic
         }
 
         var otherUser = session.GetOtherUserIfExists(user);
-        
+
         if (otherUser != null)
         {
-            Console.WriteLine("Send message to " + otherUser.Username + " with id: " + otherUser.ConnectionId +
-                              " on thread: " + Environment.CurrentManagedThreadId);
             await Clients.Client(otherUser.ConnectionId).SendAsync("ReceiveMessage", user.Username, message);
         }
-        
+
     }
 }
