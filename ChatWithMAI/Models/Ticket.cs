@@ -7,33 +7,18 @@ public class Ticket(User user)
     private bool redeemingRequested;
     public bool IsRedeemed { get; private set; }
 
-    public async Task Run()
-    {
-        var counter = 0;
-        while (!redeemingRequested)
-        {
-            if (counter >= 150)
-            {
-                IsRedeemed = true;
-                return;
-            }
-            counter++;
-            
-            await Task.Delay(100);
-        }
-        IsRedeemed = true;
-    }
+    public bool IsRedeemingRequested() => redeemingRequested;
 
-    public async Task<bool> Redeem()
+    public bool Redeem()
     {
-        Console.WriteLine("Redeeming...");
+        Console.WriteLine($"Redeeming for {User.Username}");
         if (IsRedeemed)
         {
             throw new InvalidOperationException("Ticket is already redeemed");
         }
         redeemingRequested = true;
-        await Task.Delay(500);
-        
         return IsRedeemed;
     }
+
+
 }

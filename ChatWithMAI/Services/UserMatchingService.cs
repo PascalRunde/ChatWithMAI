@@ -16,46 +16,83 @@ public class UserMatchingService(ISessionService sessionService) : IUserMatching
 
     public async Task AddUserToSearch(Ticket ticket, Func<User, Task> sendConnectUserToSessionResponse)
     {
-        Console.WriteLine($"Adding user {ticket.User.Username}");
         if (searchingUsers.ContainsKey(ticket.User))
         {
             return;
         }
-        Console.WriteLine("Found " + searchingUsers.Count + " users.");
-        if (searchingUsers.Count > 0)
+        // Start AI Cd
+        // ADD to searchingUsersList -> Triggers event
+        var AiCountdown = 150;
+        while (AiCountdown > 0)
         {
-            User? opponent = null;
-            var foundMatch = false;
-            while(!foundMatch)
+            Console.WriteLine($"Acting on ticket for {ticket.User.Username} where ticket is redeemed {ticket.IsRedeemed} on thread {Thread.CurrentThread.ManagedThreadId}");
+            if (ticket.IsRedeemed)
             {
-                opponent = searchingUsers.First().Key;
-                var opponentTicket = searchingUsers.First().Value;
-                searchingUsers.Remove(opponent);
-                foundMatch = await opponentTicket.Redeem();
+                return;
             }
 
-            var stillAttends = false;
-            if (foundMatch)
+            if (DoesPotentialOpponentExist(ticket))
             {
-                stillAttends = await ticket.Redeem();
+                Console.WriteLine($"Trying to Match {ticket.User.Username} with other User on thread {Thread.CurrentThread.ManagedThreadId}");
+                var result = await MatchUserWithUser(ticket, sendConnectUserToSessionResponse);
+                Console.WriteLine($"User {ticket.User.Username} has potential opponent: {result}");
+                if (result)
+                {
+                    return;
+                }
             }
-            Console.WriteLine("Before Trying to invoke Connection Response");
-            if (stillAttends && foundMatch)
+            else if(searchingUsers.TryAdd(ticket.User, ticket))
             {
-                Console.WriteLine("Trying to invoke Connection Response");
-                sessionService.AssignToSession(ticket.User, opponent!);
-                Dispatcher.CreateDefault().InvokeAsync(() => sendConnectUserToSessionResponse.Invoke(ticket.User));
-                Dispatcher.CreateDefault().InvokeAsync(() => sendConnectUserToSessionResponse.Invoke(opponent));
+                Console.WriteLine($"User {ticket.User.Username} has no potential opponent");
             }
+            AiCountdown--;
+            Console.WriteLine($"User {ticket.User.Username} reduces countdown to {AiCountdown}");
+            await Task.Delay(100);
         }
-        else
+
+        Console.WriteLine($"User {ticket.User.Username} will be connected with Ai and is redeemed: {ticket.IsRedeemed}");
+        ticket.Redeem();
+        MatchUserWithAi(ticket.User, sendConnectUserToSessionResponse);
+    }
+
+    private bool DoesPotentialOpponentExist(Ticket ticket) => searchingUsers.Where(user => user.Value != ticket).ToArray().Length > 0;
+
+
+    private async Task<bool> MatchUserWithUser(Ticket ticket, Func<User, Task> sendConnectUserToSessionResponse)
+    {
+        User? opponent = null;
+        var foundMatch = false;
+        while(!foundMatch && searchingUsers.Count > 0)
         {
-            searchingUsers.Add(ticket.User, ticket);
+            opponent = searchingUsers.First().Key;
+            var opponentTicket = searchingUsers.First().Value;
+            searchingUsers.Remove(opponent);
+            Console.WriteLine($"Trying to redeem from matching for opponent: {opponent.Username} on thread {Thread.CurrentThread.ManagedThreadId}");
+            foundMatch = opponentTicket.Redeem();
         }
+
+        var stillAttends = false;
+        if (foundMatch)
+        {
+            Console.WriteLine($"Trying to redeem from matching for self: {ticket.User.Username} on thread {Thread.CurrentThread.ManagedThreadId}");
+            stillAttends = ticket.Redeem();
+        }
+        Console.WriteLine("Before Trying to invoke Connection Response");
+        if (stillAttends && foundMatch)
+        {
+            Console.WriteLine($"Trying to invoke Connection Response from {ticket.User.Username} to {opponent.Username}");
+            sessionService.AssignToSession(ticket.User, opponent!);
+            Dispatcher.CreateDefault().InvokeAsync(() => sendConnectUserToSessionResponse.Invoke(ticket.User));
+            Dispatcher.CreateDefault().InvokeAsync(() => sendConnectUserToSessionResponse.Invoke(opponent));
+            return true;
+        }
+
+        return false;
     }
 
     public void MatchUserWithAi(User user, Func<User,Task> sendConnectUserToSessionResponse)
     {
+        searchingUsers.Remove(user);
         sessionService.AssignToAISession(user);
         sendConnectUserToSessionResponse.Invoke(user);
     }
