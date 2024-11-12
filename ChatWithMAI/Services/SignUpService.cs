@@ -18,14 +18,7 @@ public class SignUpService: ISignUpService
         return user;
     }
 
-    public User? GetUserByConnectionId(string connectionId)
-    {
-        return _signedUsers.FirstOrDefault(u => u.ConnectionId == connectionId);
-    }
-
-    public int GetUserCount() => _signedUsers.Count;
-
-
+    public User? GetUserByConnectionId(string connectionId) => _signedUsers.FirstOrDefault(u => u.ConnectionId == connectionId);
 }
 
 public static class SignUpServiceExtension

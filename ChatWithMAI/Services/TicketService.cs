@@ -16,12 +16,6 @@ public class TicketService(IUserMatchingService userMatchingService) : ITicketSe
         var ticket = new Ticket(userModel);
         await userMatchingService.AddUserToSearch(ticket, sendConnectUserToSessionResponse);
     }
-
-    private void ResolveTicketWithAiMatch(User user, Func<User, Task> sendConnectUserToSessionResponse)
-    {
-        Console.WriteLine($"Resolving Ticket with AI for: {user.Username}");
-        userMatchingService.MatchUserWithAi(user, sendConnectUserToSessionResponse);
-    }
 }
 
 public static class TicketServiceExtensions

@@ -12,33 +12,33 @@ public interface IAiBotService
 }
 public class AiBotService : IAiBotService
 {
-    private readonly Kernel? _kernel;
-    private readonly IChatCompletionService? _chatCompletionService;
-    private readonly OpenAIPromptExecutionSettings? _openAiPromptExecutionSettings;
+    private readonly Kernel? kernel;
+    private readonly IChatCompletionService? chatCompletionService;
+    private readonly OpenAIPromptExecutionSettings? openAiPromptExecutionSettings;
     private ChatHistory history = new ();
-    
+
     [Experimental("SKEXP0001")]
     public AiBotService(IConfiguration config)
     {
         if (!Settings.AiInUse)
             return;
-        
-        var builder = Kernel.CreateBuilder().AddOpenAIChatCompletion("gpt-3.5-turbo", config["OpenAiKey"]);
+
+        var builder = Kernel.CreateBuilder().AddOpenAIChatCompletion("gpt-3.5-turbo", config["OpenAiKey"] ?? string.Empty);
 
         // Add enterprise components
         builder.Services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
 
         // Build the kernel
-        _kernel = builder.Build();
-        _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+        kernel = builder.Build();
+        chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
 
         // Enable planning
-        _openAiPromptExecutionSettings = new OpenAIPromptExecutionSettings
+        openAiPromptExecutionSettings = new OpenAIPromptExecutionSettings
         {
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
         };
     }
-    
+
     public async Task<ChatMessageContent> SendChatPromptAsync(string userInput)
     {
         if (!Settings.AiInUse)
@@ -49,18 +49,18 @@ public class AiBotService : IAiBotService
             };
             return standardMessage;
         }
-        
+
         // Add user input
         history.AddUserMessage(userInput);
         var result = new ChatMessageContent();
         try
         {
             // Get the response from the AI
-            result = await _chatCompletionService!.GetChatMessageContentAsync(
+            result = await chatCompletionService!.GetChatMessageContentAsync(
                 history,
-                executionSettings: _openAiPromptExecutionSettings,
-                kernel: _kernel);
-            
+                executionSettings: openAiPromptExecutionSettings,
+                kernel: kernel);
+
             // Add the message from the agent to the chat history
             history.AddMessage(result.Role, result.Content ?? string.Empty);
         }

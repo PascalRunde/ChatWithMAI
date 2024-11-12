@@ -4,10 +4,7 @@ public class Ticket(User user)
 {
     public Guid Id = Guid.NewGuid();
     public User User { get; } = user?? throw new ArgumentNullException(nameof(user));
-    private bool redeemingRequested;
     public bool IsRedeemed { get; private set; }
-
-    public bool IsRedeemingRequested() => redeemingRequested;
 
     public bool Redeem()
     {
@@ -16,7 +13,8 @@ public class Ticket(User user)
         {
             throw new InvalidOperationException("Ticket is already redeemed");
         }
-        redeemingRequested = true;
+
+        IsRedeemed = true;
         return IsRedeemed;
     }
 
